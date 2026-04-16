@@ -22,7 +22,7 @@ cd fx-inflation-dashboard
 pip install -r requirements.txt
 
 # Run the app
-streamlit run app/main.py
+streamlit run streamlit_app.py
 ```
 
 The app will open at `http://localhost:8501`
@@ -45,7 +45,7 @@ The app will open at `http://localhost:8501`
    - Sign in with GitHub
    - Click "New app"
    - Select your repository
-   - Set the main file path to `app/main.py`
+   - Set the main file path to `streamlit_app.py`
    - Click "Deploy"
 
 Your app will be deployed and accessible via a public URL.
@@ -70,10 +70,9 @@ Your app will be deployed and accessible via a public URL.
 
 ```
 fx-inflation-dashboard/
-├── app/
-│   └── main.py          # Main Streamlit application
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
+├── streamlit_app.py      # Main Streamlit application
+├── requirements.txt     # Python dependencies
+└── README.md            # This file
 ```
 
 ## Requirements
