@@ -112,20 +112,34 @@ tab1, tab2, tab3 = st.tabs(["📊 Data Upload & Analysis", "💬 Inflation Bot",
 
 with tab1:
     st.header("Upload Your Data")
-    st.markdown("""
-    Paste your country's exchange rates or inflation figures below.
-    Format: Date/Period followed by value (tab, comma, or space separated)
     
-    **Example formats:**
-    ```
-    2024-01 5.2
-    2024-02 5.5
-    2024-03 5.1
-    ```
-    """)
+    upload_method = st.radio("Select upload method:", ["📝 Paste Text", "📁 Upload Excel File"], horizontal=True)
     
-    data_input = st.text_area("Paste your data here:", height=200, 
-                              placeholder="Date/Period\tValue\n2024-01\t5.2\n2024-02\t5.5...")
+    data_input = None
+    uploaded_file = None
+    
+    if upload_method == "📝 Paste Text":
+        st.markdown("""
+        Paste your country's exchange rates or inflation figures below.
+        Format: Date/Period followed by value (tab, comma, or space separated)
+        
+        **Example formats:**
+        ```
+        2024-01 5.2
+        2024-02 5.5
+        2024-03 5.1
+        ```
+        """)
+        
+        data_input = st.text_area("Paste your data here:", height=200, 
+                                  placeholder="Date/Period\tValue\n2024-01\t5.2\n2024-02\t5.5...")
+    else:
+        st.markdown("""
+        Upload an Excel file (.xlsx or .xls) containing your data.
+        The file should have at least two columns: Date/Period and Value.
+        """)
+        
+        uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx", "xls"])
     
     col1, col2 = st.columns(2)
     with col1:
@@ -134,29 +148,39 @@ with tab1:
         country = st.text_input("Country:", placeholder="e.g., USA, UK, Japan")
     
     if st.button("Analyze Data", type="primary"):
-        if data_input.strip():
-            try:
-                agent.uploaded_data = agent.parse_uploaded_data(data_input)
-                if not agent.uploaded_data.empty:
-                    trends = agent.analyze_trends(agent.uploaded_data)
-                    agent.data_commentary = agent.generate_commentary(trends, data_type)
-                    
-                    st.success("Data analyzed successfully!")
-                    st.markdown(agent.data_commentary)
-                    
-                    with st.expander("View Raw Data"):
-                        st.dataframe(agent.uploaded_data)
-                        
-                    with st.expander("View Data Chart"):
-                        chart_df = agent.uploaded_data.copy()
-                        chart_df["Value"] = pd.to_numeric(chart_df["Value"], errors='coerce')
-                        st.line_chart(chart_df.set_index("Date")["Value"])
+        try:
+            if upload_method == "📝 Paste Text":
+                if not data_input.strip():
+                    st.warning("Please enter some data to analyze.")
                 else:
-                    st.error("Could not parse data. Please check the format.")
-            except Exception as e:
-                st.error(f"Error analyzing data: {str(e)}")
-        else:
-            st.warning("Please enter some data to analyze.")
+                    agent.uploaded_data = agent.parse_uploaded_data(data_input)
+            else:
+                if uploaded_file is None:
+                    st.warning("Please upload an Excel file.")
+                else:
+                    df = pd.read_excel(uploaded_file)
+                    st.write("Columns found:", df.columns.tolist())
+                    if len(df.columns) >= 2:
+                        agent.uploaded_data = df.rename(columns={df.columns[0]: "Date", df.columns[1]: "Value"})
+                    else:
+                        st.error("Excel file must have at least 2 columns (Date and Value)")
+            
+            if agent.uploaded_data is not None and not agent.uploaded_data.empty:
+                trends = agent.analyze_trends(agent.uploaded_data)
+                agent.data_commentary = agent.generate_commentary(trends, data_type)
+                
+                st.success("Data analyzed successfully!")
+                st.markdown(agent.data_commentary)
+                
+                with st.expander("View Raw Data"):
+                    st.dataframe(agent.uploaded_data)
+                    
+                with st.expander("View Data Chart"):
+                    chart_df = agent.uploaded_data.copy()
+                    chart_df["Value"] = pd.to_numeric(chart_df["Value"], errors='coerce')
+                    st.line_chart(chart_df.set_index("Date")["Value"])
+        except Exception as e:
+            st.error(f"Error analyzing data: {str(e)}")
     
     if agent.uploaded_data is not None and not agent.uploaded_data.empty:
         st.divider()
